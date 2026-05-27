@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Relatório Técnico T5 — Índices em PostgreSQL</title>
+        <style>
+            
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    @page {
+        size: A4;
+        margin: 20mm 15mm 20mm 15mm; /* Margens nativas reais repetidas em todas as páginas */
+    }
+    
+    body {
+        font-family: 'Inter', sans-serif;
+        color: #1a1a1a;
+        line-height: 1.6;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        background-color: #ffffff;
+    }
+    
+    h1, h2, h3, h4 {
+        color: #0f172a;
+        font-weight: 600;
+        margin-top: 1.8em;
+        margin-bottom: 0.6em;
+        page-break-after: avoid; /* Evita quebra de página logo após títulos (órfãos) */
+        break-after: avoid;
+    }
+    
+    h1 {
+        font-size: 2.2em;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 15px;
+        margin-top: 0;
+    }
+    
+    h2 {
+        font-size: 1.6em;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 8px;
+    }
+    
+    h3 {
+        font-size: 1.25em;
+    }
+    
+    p {
+        margin-bottom: 1.2em;
+        font-size: 1.05em;
+        color: #334155;
+    }
+    
+    strong {
+        color: #0f172a;
+        font-weight: 600;
+    }
+    
+    code {
+        font-family: 'JetBrains Mono', monospace;
+        background-color: #f1f5f9;
+        color: #0f172a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+    
+    pre {
+        background-color: #0f172a;
+        border-radius: 8px;
+        padding: 20px;
+        overflow-x: auto; /* Mantém o scroll horizontal elegante no navegador */
+        margin: 1.5em 0;
+        border: 1px solid #1e293b;
+        page-break-inside: avoid; /* Evita quebrar blocos de código no meio */
+        break-inside: avoid;
+    }
+    
+    pre code {
+        font-family: 'JetBrains Mono', monospace;
+        background-color: transparent;
+        color: #f8fafc;
+        padding: 0;
+        border-radius: 0;
+        font-size: 0.95em;
+        line-height: 1.5;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 2em 0;
+        font-size: 1em;
+        page-break-inside: avoid; /* Evita quebrar tabelas no meio */
+        break-inside: avoid;
+    }
+    
+    th, td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    th {
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-weight: 600;
+    }
+    
+    tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    hr {
+        border: 0;
+        border-top: 1px solid #e2e8f0;
+        margin: 2.5em 0;
+    }
+    
+    ul, ol {
+        margin-bottom: 1.5em;
+        padding-left: 20px;
+        page-break-inside: avoid; /* Evita quebrar listas no meio se possível */
+        break-inside: avoid;
+    }
+    
+    li {
+        margin-bottom: 0.6em;
+        color: #334155;
+    }
+    
+    a {
+        color: #2563eb;
+        text-decoration: none;
+    }
+    
+    a:hover {
+        text-decoration: underline;
+    }
+    
+    @media print {
+        body {
+            padding: 0; /* Margem nativa do @page cuida do espaçamento em todas as folhas */
+            max-width: 100%;
+            font-size: 11pt;
+            background-color: #ffffff;
+        }
+        
+        pre {
+            background-color: #f8fafc;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            white-space: pre-wrap;       /* Força a quebra de linha de código longa no papel */
+            word-wrap: break-word;       /* Força a quebra de palavras no limite lateral */
+            overflow-x: visible;         /* Desativa scroll no PDF final */
+        }
+        
+        pre code {
+            color: #0f172a;
+            white-space: pre-wrap;       /* Força o código interno a quebrar linha */
+        }
+        
+        table {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        
+        tr, td, th {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+    }
+    
+        </style>
+    </head>
+    <body>
+        <h1>Relatório Técnico — Trabalho Prático T5</h1>
+<h2>Otimização Física de Consultas com Índices em PostgreSQL</h2>
+<blockquote>
+<p><strong>Disciplina:</strong> SCC-541 – Laboratório de Bases de Dados (1º Semestre de 2026)<br><strong>Docente:</strong> Prof. Dr. Caetano Traina Jr.<br><strong>PAE:</strong> Gabriel Lucca de Melo  </p>
+</blockquote>
+<hr>
+<h3>Grupo de Trabalho</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Nome</th>
+<th align="center">NUSP</th>
+<th align="center">E-mail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Katiely Feitosa de Lacerda</td>
+<td align="center">12777100</td>
+<td align="center"><a href="mailto:katiely.lacerda@usp.br">katiely.lacerda@usp.br</a></td>
+</tr>
+<tr>
+<td align="left">Leonardo Gonsalez</td>
+<td align="center">15657074</td>
+<td align="center"><a href="mailto:leonardo.gonsalez@usp.br">leonardo.gonsalez@usp.br</a></td>
+</tr>
+<tr>
+<td align="left">Miguel Filippo Calhabeu</td>
+<td align="center">15480331</td>
+<td align="center"><a href="mailto:miguel.calhabeu@usp.br">miguel.calhabeu@usp.br</a></td>
+</tr>
+<tr>
+<td align="left">Renan Silva Soriano</td>
+<td align="center">11794824</td>
+<td align="center"><a href="mailto:renan.soriano@usp.br">renan.soriano@usp.br</a></td>
+</tr>
+<tr>
+<td align="left">Guilherme Motta Tranche</td>
+<td align="center">13671549</td>
+<td align="center"><a href="mailto:guilherme.tranche@usp.br">guilherme.tranche@usp.br</a></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>1. Introdução e Metodologia Experimental</h2>
+<p>Este relatório apresenta os resultados práticos da otimização física de consultas na base de dados integrada de <strong>Fórmula 1 + GeoNames (Cidades e Países)</strong>, avaliando o ganho de desempenho obtido com a criação de índices estruturados.</p>
+<p>Para medir os tempos de execução de forma precisa e mitigar ruídos do sistema operacional, os testes seguiram o seguinte protocolo:</p>
+<ol>
+<li><strong>Aquecimento de Cache (Warm Cache):</strong> Execução prévia das consultas para carregar os blocos de dados no Buffer Pool da memória RAM.</li>
+<li><strong>Medição Estatística (100 Execuções):</strong> Criação das funções customizadas em PL/pgSQL (Mede_Tempo_Q1 e Mede_Tempo_Q2), que executam a respectiva consulta 100 vezes de forma sequencial e retornam a média aritmética de tempo em milissegundos (ms).</li>
+<li><strong>Análise do Plano Físico:</strong> Inspeção do plano gerado pelo SGBD usando a instrução EXPLAIN ANALYZE.</li>
+</ol>
+<hr>
+<h2>2. Exercício 1 — Busca de Piloto por Nome Exato</h2>
+<p>A consulta busca recuperar a nacionalidade de um piloto a partir da concatenação de seu nome (given_name) e sobrenome (family_name) correspondendo a uma igualdade exata:</p>
+<pre><code class="language-sql">SELECT (given_name || &#39; &#39; || family_name)::TEXT AS driver_name, nationality::TEXT 
+FROM drivers 
+WHERE (given_name || &#39; &#39; || family_name) = &#39;Ayrton Senna&#39;;
+</code></pre>
+<h3>2.1. Estado Inicial (Sem Índice)</h3>
+<ul>
+<li><strong>Tempo Médio por Execução:</strong> <strong>0,07 ms</strong></li>
+<li><strong>Plano de Execução (EXPLAIN ANALYZE):</strong><pre><code class="language-yaml">Seq Scan on drivers  (cost=0.00..10.53 rows=1 width=64) (actual time=0.050..0.072 rows=1 loops=1)
+  Filter: ((((given_name)::text || &#39; &#39;::text) || (family_name)::text) = &#39;Ayrton Senna&#39;::text)
+  Rows Removed by Filter: 615
+Planning Time: 0.034 ms
+Execution Time: 0.078 ms
+</code></pre>
+</li>
+<li><strong>Análise:</strong> Como o filtro depende de uma expressão calculada e não havia índices apropriados, o PostgreSQL realizou uma varredura sequencial completa (Seq Scan) na tabela drivers. Ele leu em CPU todos os 616 registros para calcular a concatenação e filtrar a linha desejada, o que gera custo linear O(N).</li>
+</ul>
+<h3>2.2. Escolha e Justificativa do Índice</h3>
+<p>Optamos pela criação de um <strong>Índice Hash Funcional</strong> baseado na expressão de busca:</p>
+<pre><code class="language-sql">CREATE INDEX idx_drivers_fullname_hash ON drivers USING hash (((given_name || &#39; &#39; || family_name)));
+</code></pre>
+<ul>
+<li><strong>Justificativa:</strong> O predicado da consulta utiliza estritamente o operador de igualdade exata (=). A estrutura Hash é teoricamente ótima para buscas pontuais de igualdade, resolvendo o mapeamento em tempo constante médio O(1). A criação foi baseada em expressão (índice funcional) para evitar o recálculo da concatenação de strings em tempo de execução.</li>
+<li><strong>Nota de Design:</strong> Chaves Hash no PostgreSQL não suportam índices de cobertura (INCLUDE) ou índices parciais com filtro (WHERE), impossibilitando armazenar a coluna nationality no próprio índice.</li>
+</ul>
+<h3>2.3. Estado Otimizado (Com Índice)</h3>
+<ul>
+<li><strong>Tempo Médio por Execução:</strong> <strong>0,01 ms</strong> (Aceleração de aproximadamente <strong>7 vezes</strong>)</li>
+<li><strong>Plano de Execução (EXPLAIN ANALYZE):</strong><pre><code class="language-yaml">Bitmap Heap Scan on drivers  (cost=4.02..9.73 rows=3 width=64) (actual time=0.005..0.005 rows=1 loops=1)
+  Recheck Cond: ((((given_name)::text || &#39; &#39;::text) || (family_name)::text) = &#39;Ayrton Senna&#39;::text)
+  Heap Blocks: exact=1
+  -&gt;  Bitmap Index Scan on idx_drivers_fullname_hash  (cost=0.00..4.02 rows=3 width=0) (actual time=0.003..0.003 rows=1 loops=1)
+        Index Cond: ((((given_name)::text || &#39; &#39;::text) || (family_name)::text) = &#39;Ayrton Senna&#39;::text)
+Planning Time: 0.022 ms
+Execution Time: 0.011 ms
+</code></pre>
+</li>
+<li><strong>Análise:</strong> O planejador passou a utilizar um Bitmap Index Scan no índice criado. A chave de busca foi mapeada instantaneamente no índice em memória, fornecendo a página física do registro. O PostgreSQL realizou um Bitmap Heap Scan para acessar apenas 1 único bloco físico na tabela Heap para retornar a nacionalidade, diminuindo drasticamente os tempos de CPU e I/O.</li>
+</ul>
+<hr>
+<h2>3. Exercício 2 — Cidades Brasileiras por Prefixo de Nome</h2>
+<p>A consulta busca retornar a latitude, longitude e população de cidades localizadas no Brasil cujo nome inicia com o prefixo <code>&quot;São&quot;</code>:</p>
+<pre><code class="language-sql">SELECT name::TEXT, latitude, longitude, population 
+FROM cities 
+WHERE country_id = (SELECT id FROM countries WHERE code = &#39;BR&#39; LIMIT 1)
+  AND name LIKE &#39;São%&#39;;
+</code></pre>
+<h3>3.1. Estado Inicial (Sem Índice)</h3>
+<ul>
+<li><strong>Tempo Médio por Execução:</strong> <strong>6,10 ms</strong></li>
+<li><strong>Plano de Execução (EXPLAIN ANALYZE):</strong><pre><code class="language-yaml">Seq Scan on cities  (cost=8.16..1662.82 rows=1 width=56) (actual time=0.173..6.097 rows=243 loops=1)
+  Filter: (((name)::text ~~ &#39;São%&#39;::text) AND (country_id = $0))
+  Rows Removed by Filter: 81026
+  InitPlan 1 (returns $0)
+    -&gt;  Limit  (cost=0.14..8.16 rows=1 width=4) (actual time=0.007..0.007 rows=1 loops=1)
+          -&gt;  Index Scan using countries_code_key on countries  ...
+Planning Time: 0.048 ms
+Execution Time: 6.109 ms
+</code></pre>
+</li>
+<li><strong>Análise:</strong> Embora o ID do Brasil (country_id) tenha sido resolvido rapidamente via busca indexada na tabela countries, o otimizador foi forçado a executar um Seq Scan varrendo as 81.269 linhas da tabela cities para aplicar os filtros. Isso exigiu processamento exaustivo de CPU e descartou 81.026 registros.</li>
+</ul>
+<h3>3.2. Escolha e Justificativa do Índice</h3>
+<p>Optamos pela criação de um <strong>Índice B-Tree Composto com Cobertura (INCLUDE)</strong>:</p>
+<pre><code class="language-sql">CREATE INDEX idx_cities_br_name_btree ON cities (country_id, name text_pattern_ops) 
+INCLUDE (latitude, longitude, population);
+</code></pre>
+<ul>
+<li><strong>Justificativa:</strong> A busca por correspondência de prefixo (LIKE &#39;São%&#39;) exige uma estrutura ordenada, o que torna o uso do índice B-Tree obrigatório (índices Hash não suportam consultas por faixas ou padrões de texto).</li>
+<li><strong>Especificações do Índice:</strong><ul>
+<li><strong>Composto (country_id, name):</strong> Mapeia de forma conjunta as duas condições do predicado.</li>
+<li><strong>Classe de Operador text_pattern_ops:</strong> Garante que o PostgreSQL ordene strings byte por byte (binário), viabilizando o uso correto da B-Tree na cláusula LIKE independentemente do locale ou codificação configurados no sistema operacional.</li>
+<li><strong>Cláusula INCLUDE:</strong> Adiciona as colunas projetadas (latitude, longitude, population) nas páginas folha do índice. Com isso, transformamos a estrutura em um índice de cobertura, permitindo que a consulta seja respondida inteiramente através de uma varredura de índice, sem a necessidade de acessar os dados reais na tabela física (Heap).</li>
+</ul>
+</li>
+</ul>
+<h3>3.3. Estado Otimizado (Com Índice)</h3>
+<ul>
+<li><strong>Tempo Médio por Execução:</strong> <strong>0,08 ms</strong> (Aceleração de aproximadamente <strong>76 vezes</strong>)</li>
+<li><strong>Plano de Execução (EXPLAIN ANALYZE):</strong><pre><code class="language-yaml">Bitmap Heap Scan on cities  (cost=12.61..20.42 rows=2 width=56) (actual time=0.031..0.077 rows=243 loops=1)
+  Recheck Cond: (country_id = $0)
+  Filter: ((name)::text ~~ &#39;São%&#39;::text)
+  Heap Blocks: exact=114
+  InitPlan 1 (returns $0)
+    -&gt;  Limit  ...
+  -&gt;  Bitmap Index Scan on idx_cities_br_name_btree  (cost=0.00..4.44 rows=2 width=0) (actual time=0.023..0.023 rows=243 loops=1)
+        Index Cond: ((country_id = $0) AND ((name)::text ~&gt;=~ &#39;São&#39;::text) AND ((name)::text ~~&lt;~ &#39;Sãp&#39;::text))
+Planning Time: 0.037 ms
+Execution Time: 0.089 ms
+</code></pre>
+</li>
+<li><strong>Análise:</strong> O SGBD substituiu o Seq Scan de 81 mil linhas por um Bitmap Index Scan na B-Tree, localizando de forma logarítmica O(log N) o intervalo de chaves correspondente ao prefixo São. Em vez de varrer a tabela, leu apenas 114 blocos físicos contendo as cidades de interesse, reduzindo o tempo para menos de um décimo de milissegundo.</li>
+</ul>
+<hr>
+<h2>4. Exercício 3 — Questão Teórica (B-Trees e LIKE <code>%valor%</code>)</h2>
+<h3>Pergunta</h3>
+<blockquote>
+<p>Estruturas B-trees conseguem indexar consultas com predicados do tipo: <code>&lt;Atributo&gt; LIKE &quot;%valor%&quot;</code>? (Considere que o atributo seja do tipo TEXT). Explique.</p>
+</blockquote>
+<h3>Resposta</h3>
+<p><strong>Não de forma eficiente.</strong></p>
+<p>A estrutura B-Tree mantém seus nós e chaves organizados em uma sequência estritamente ordenada (lexicograficamente no caso de textos). Isso viabiliza pesquisas rápidas em tempo logarítmico O(log N) por meio de busca binária baseada no início da chave (ex: LIKE &#39;São%&#39;).</p>
+<p>Ao utilizar um curinga no início do padrão buscado (LIKE &#39;%valor%&#39;), o caractere inicial da string torna-se completamente desconhecido. Como a substring buscada pode iniciar com qualquer caractere, o SGBD perde o ponto de entrada na árvore e é incapaz de realizar a descida estruturada pelos nós. Nessas condições, o otimizador do PostgreSQL descarta a busca binária e realiza uma varredura sequencial de todas as chaves do índice (Index Full Scan) ou, mais comumente, varre a tabela inteira na Heap via Seq Scan, aplicando o filtro de correspondência de padrão linha por linha.</p>
+<h4>Solução Alternativa no PostgreSQL:</h4>
+<p>Para otimizar buscas por substrings genéricas, o PostgreSQL fornece suporte a índices invertidos GIN (Generalized Inverted Index) em conjunto com a extensão nativa pg_trgm (trigramas):</p>
+<pre><code class="language-sql">CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX idx_cities_name_trgm ON cities USING GIN (name gin_trgm_ops);
+</code></pre>
+<p>O índice GIN fragmenta os textos em conjuntos de 3 caracteres (trigramas) e mapeia suas posições, permitindo buscas de alta performance com %valor% em frações de milissegundo.</p>
+<hr>
+<h2>5. Tabela Comparativa de Performance</h2>
+<p>A tabela abaixo consolida os resultados práticos coletados:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Cenário de Teste</th>
+<th align="left">Operação Principal</th>
+<th align="center">Estrutura Escolhida</th>
+<th align="center">Tempo Sem Índice</th>
+<th align="center">Tempo Com Índice</th>
+<th align="center">Fator de Speedup</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Ex. 1 — Ayrton Senna</strong></td>
+<td align="left">Igualdade Exata (=)</td>
+<td align="center">Hash Funcional</td>
+<td align="center">0,07 ms</td>
+<td align="center">0,01 ms</td>
+<td align="center">7 vezes</td>
+</tr>
+<tr>
+<td align="left"><strong>Ex. 2 — Cidades (Prefix)</strong></td>
+<td align="left">Busca por Prefixo (LIKE)</td>
+<td align="center">B-Tree Composta</td>
+<td align="center">6,10 ms</td>
+<td align="center">0,08 ms</td>
+<td align="center">76 vezes</td>
+</tr>
+<tr>
+<td align="left"><strong>Ex. 3 — LIKE &#39;%valor%&#39;</strong></td>
+<td align="left">Substring no Início</td>
+<td align="center">Inviável na B-Tree</td>
+<td align="center">—</td>
+<td align="center">—</td>
+<td align="center">—</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. Conclusão Geral</h2>
+<p>Os experimentos práticos evidenciaram que o uso de índices em SGBDs exige o alinhamento correto entre a estrutura física e o operador lógico do predicado. O índice Hash provou ser a melhor escolha para buscas pontuais de igualdade exata (Ex. 1), enquanto a B-Tree mostrou-se indispensável para consultas baseadas em intervalos e padrões ordenados (Ex. 2), especialmente quando potencializada por recursos como a classe de operador text_pattern_ops e a indexação de cobertura via cláusula INCLUDE.</p>
+
+    </body>
+    </html>
+    
